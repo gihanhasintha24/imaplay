@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Imaplay</string>
+    <string name="title_activity_main">Imaplay</string>
+    <string name="package_name">com.imagini.imaplay</string>
+    <string name="custom_url_scheme">com.imagini.imaplay</string>
+</resources>

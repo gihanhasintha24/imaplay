@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Awesome Capacitor App</title>
+    <meta
+      name="viewport"
+      content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-tap-highlight" content="no" />
+
+    <script
+      type="module"
+      src="https://unpkg.com/@ionic/pwa-elements@latest/dist/ionicpwaelements/ionicpwaelements.esm.js"
+    ></script>
+    <script
+      nomodule
+      src="https://unpkg.com/@ionic/pwa-elements@latest/dist/ionicpwaelements/ionicpwaelements.js"
+    ></script>
+
+    <link rel="icon" type="image/x-icon" href="./assets/icon/favicon.ico" />
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="stylesheet" href="./css/style.css" />
+    <link rel="stylesheet" href="./css/navbarstyle.css" />
+    <meta name="theme-color" content="#31d53d" />
+  </head>
+  <body>
+
+    <div class="login-form-navbar">
+      <div class="navbar-logo">
+        <img src="./assets/icon/navlogo.png" alt="">
+      </div>
+    </div>
+
+    <button id="signInButton">Sign In with Google</button>
+    <button id="signInWithEmailButton">Sign In with Email/Password</button>
+    <button id="signOutButton">Sign Out</button>
+
+    <div id="message">
+        <p>You have signed in as <span id="userName"></span> with the email <span id="userEmail"></span></p>
+        <img id="userPhoto" src="" alt="Profile Picture">
+    </div>
+
+    <!-- Add these elements for email/password sign-in -->
+    <div id="emailSignIn" style="display: none;">
+        <input type="email" id="emailInput" placeholder="Email">
+        <input type="password" id="passwordInput" placeholder="Password">
+        <button id="signInWithEmailSubmitButton">Sign In</button>
+    </div>
+
+    <!-- Registration Form -->
+    <div id="registrationForm" style="display: none;">
+        <h2>Register</h2>
+        <input type="text" id="nameInput" placeholder="Name">
+        <input type="email" id="emailRegisterInput" placeholder="Email">
+        <input type="password" id="passwordRegisterInput" placeholder="Password">
+        <button id="registerButton">Register</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, GoogleAuthProvider, EmailAuthProvider, signInWithPopup, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyBGEXBlF1Z7mXlet3qdUKDPQwT_lsRmM94",
+          authDomain: "login-bbcfb.firebaseapp.com",
+          projectId: "login-bbcfb",
+          storageBucket: "login-bbcfb.appspot.com",
+          messagingSenderId: "1088003251599",
+          appId: "1:1088003251599:web:07467b627308d6fb96bffa"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth();
+        const firestore = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
+        const emailProvider = new EmailAuthProvider();
+
+        const signInButton = document.getElementById("signInButton");
+        const signInWithEmailButton = document.getElementById("signInWithEmailButton");
+        const signInWithEmailSubmitButton = document.getElementById("signInWithEmailSubmitButton");
+        const signOutButton = document.getElementById("signOutButton");
+        const message = document.getElementById("message");
+        const userName = document.getElementById("userName");
+        const userEmail = document.getElementById("userEmail");
+        const userPhoto = document.getElementById("userPhoto");
+        const emailSignIn = document.getElementById("emailSignIn");
+        const registrationForm = document.getElementById("registrationForm");
+        const registerButton = document.getElementById("registerButton");
+
+        signOutButton.style.display = "none";
+        message.style.display = "none";
+
+        const userSignInWithGoogle = async () => {
+            signInWithPopup(auth, googleProvider)
+                .then((result) => {
+                    const user = result.user;
+                    console.log(user);
+                }).catch((error) => {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                });
+        };
+
+        const userSignInWithEmail = async () => {
+            const email = document.getElementById("emailInput").value;
+            const password = document.getElementById("passwordInput").value;
+
+            signInWithEmailAndPassword(auth, email, password)
+                .then((result) => {
+                    const user = result.user;
+                    console.log(user);
+                })
+                .catch((error) => {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    console.error(errorCode, errorMessage);
+                });
+        };
+
+        const userSignOut = async () => {
+            signOut(auth).then(() => {
+                alert("You have signed out successfully!");
+            }).catch((error) => {});
+        };
+
+        const userRegister = () => {
+            const email = document.getElementById("emailRegisterInput").value;
+            const password = document.getElementById("passwordRegisterInput").value;
+            const displayName = document.getElementById("nameInput").value;
+
+            createUserWithEmailAndPassword(auth, email, password)
+                .then(async (userCredential) => {
+                    const user = userCredential.user;
+
+                    // Update user profile with display name and photo URL
+                    user.updateProfile({
+                        displayName: displayName,
+                        photoURL: "user.png"
+                    });
+
+                    // Save user's name to Firestore
+                    const userDocRef = doc(firestore, 'user_name', user.uid, 'user_names', user.uid);
+                    await setDoc(userDocRef, {
+                        displayName: displayName,
+                        email: user.email,
+                        // Add other user data if needed
+                    });
+
+                    alert("Registration successful!");
+                })
+                .catch((error) => {
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    console.error(errorCode, errorMessage);
+                });
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                signOutButton.style.display = "block";
+                message.style.display = "block";
+                signInButton.style.display = "none";
+                signInWithEmailButton.style.display = "none";
+                emailSignIn.style.display = "none";
+                registrationForm.style.display = "none";
+
+                userName.innerHTML = user.displayName;
+                userEmail.innerHTML = user.email;
+                userPhoto.src = user.photoURL || "user.png";
+            } else {
+                signOutButton.style.display = "none";
+                signInButton.style.display = "block";
+                signInWithEmailButton.style.display = "block";
+                emailSignIn.style.display = "none";
+                message.style.display = "none";
+                registrationForm.style.display = "none";
+            }
+        });
+
+        signInButton.addEventListener('click', userSignInWithGoogle);
+        signInWithEmailButton.addEventListener('click', () => {
+            emailSignIn.style.display = "block";
+            registrationForm.style.display = "block";
+        });
+        signInWithEmailSubmitButton.addEventListener('click', userSignInWithEmail);
+        signOutButton.addEventListener('click', userSignOut);
+        registerButton.addEventListener('click', userRegister);
+    </script>
+    <script src="./js/main.js" type="module"></script>
+</body>
+</html>
